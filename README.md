@@ -35,3 +35,17 @@ Arguments:
 - Input from stdin:<br>
   __`echo huffman | python huffman.py`__<br>
   `110100000011111010`
+- Show only char probabilities, formated to 4 decimal points:<br>
+  `python huffman.py -d c=p{:.10f} "huffman"`<br>
+  ```
+  +-------+--------------+
+  | Chars |      P       |
+  +-------+--------------+
+  |   a   | 0.1428571429 |
+  |   f   | 0.2857142857 |
+  |   h   | 0.1428571429 |
+  |   m   | 0.1428571429 |
+  |   n   | 0.1428571429 |
+  |   u   | 0.1428571429 |
+  +-------+--------------+
+  ```
