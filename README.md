@@ -1,10 +1,11 @@
-# Requirements
+## Requirements
 - Python3
 - prettytable (only if you need tables)
 
-# Usage
-`huffman.py [-h] [-e] [-d DATA] [-t] [input]`
-Optional Args:
+## Usage
+`huffman.py [-h] [-e] [-d DATA] [-t] [input]`<br>
+
+Arguments:
 - `input`: The input string. Can be ommitted to use stdin
 - `-e`: Show the Huffman encoded input
 - `-t`: Show the generated Huffman Tree
@@ -16,7 +17,7 @@ Optional Args:
   - `[s|sortby]=[p|w|l]`: Sort table by a column
   - `[r|reverse]`: Reverse sort order
   
- # Examples
+ ## Examples
  - Show all data, sorted by codewords in reverse order:<br>
    __`python huffman.py -d c=pwl,s=w,r "huffman"`__
    ```
