@@ -19,7 +19,7 @@ Arguments:
   
  ## Examples
  - Show all data, sorted by codewords in reverse order:<br>
-   __`python huffman.py -d c=pwl,s=w,r "huffman"`__
+   `python huffman.py -d c=pwl,s=w,r "huffman"`
    ```
     +-------+-----+-----------+---------+
     | Chars |  P  | Codewords | Lengths |
@@ -33,19 +33,19 @@ Arguments:
     +-------+-----+-----------+---------+
    ````
 - Input from stdin:<br>
-  __`echo huffman | python huffman.py`__<br>
+  `echo huffman | python huffman.py`<br>
   `110100000011111010`
 - Show only char probabilities, formated to 4 decimal points:<br>
-  `python huffman.py -d c=p{:.10f} "huffman"`<br>
+  `python huffman.py -d c=p{:.4f} "huffman"`<br>
   ```
-  +-------+--------------+
-  | Chars |      P       |
-  +-------+--------------+
-  |   a   | 0.1428571429 |
-  |   f   | 0.2857142857 |
-  |   h   | 0.1428571429 |
-  |   m   | 0.1428571429 |
-  |   n   | 0.1428571429 |
-  |   u   | 0.1428571429 |
-  +-------+--------------+
+  +-------+--------+
+  | Chars |   P    |
+  +-------+--------+
+  |   a   | 0.1429 |
+  |   f   | 0.2857 |
+  |   h   | 0.1429 |
+  |   m   | 0.1429 |
+  |   n   | 0.1429 |
+  |   u   | 0.1429 |
+  +-------+--------+
   ```
