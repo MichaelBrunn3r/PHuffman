@@ -143,7 +143,10 @@ def print_table(format, chars, probabilities = None, codewords = None):
 	# Add optional columns
 	for column in columns:
 		if column == 'probs':
-			table.add_column(column_names[column], probabilities)
+			probs = probabilities
+			if probs_format: probs = list(map(lambda x: "{{{}}}".format(probs_format).format(float(x)), probabilities))
+			
+			table.add_column(column_names[column], probs)
 		elif column == 'codewords':
 			table.add_column(column_names[column], codewords)
 		elif column == 'code-lengths':
