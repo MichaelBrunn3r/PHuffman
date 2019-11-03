@@ -155,16 +155,20 @@ def print_table(format, chars, probabilities = None, codewords = None):
 
 if __name__ == "__main__":
 	# Parse CL Arguments
-	import argparse
+	import argparse, sys
 	parser = argparse.ArgumentParser(description='Calculate Huffman Codes')
-	parser.add_argument('string', type=str, help='The string to encode')
+	parser.add_argument('input', nargs='?', type=str, default=None, help='The string to encode')
 	parser.add_argument('-e', '--show-encoded', action='store_true', help='Show the encoded string')
 	parser.add_argument('-d', '--data', help="Shows generated data in formated table: columns=[p{<format>}|w|l]+,sortby=[p|w|l],reverse")
 	parser.add_argument('-t', '--tree', help="Shows resulting huffman tree", action="store_true")
 	args = parser.parse_args()
 
+	input = args.input
+	if input == None: 
+		input = sys.stdin.read().rstrip()
+
 	# Calculate Probabilites
-	char_prob_pairs = sorted(char_probabilities(args.string), key=lambda x : x[0])
+	char_prob_pairs = sorted(char_probabilities(input), key=lambda x : x[0])
 	chars = list(map(lambda x: x[0], char_prob_pairs))
 	probs = list(map(lambda x: x[1], char_prob_pairs))
 
@@ -181,5 +185,5 @@ if __name__ == "__main__":
 	if args.tree:
 		print(huffman_tree)
 	if args.show_encoded:
-		encoded = encode(args.string, char_code_pairs)
+		encoded = encode(input, char_code_pairs)
 		print(encoded)
