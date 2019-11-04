@@ -77,9 +77,12 @@ def char_occurrences(string):
 			probs[char] = probs[char] + 1	
 	return sorted(list(map(lambda c: (c,probs[c]), probs)))
 
-def char_probabilities(string):
+def char_probabilities(string, abs_probs=None):
 	""" Returns a list of pairs, each consisting out of a char and its probability in the string """
-	return list(map(lambda x: (x[0], Fraction(x[1],len(string))), char_occurrences(string)))
+	if not abs_probs:
+		abs_probs = char_occurrences(string)
+
+	return list(map(lambda x: (x[0], Fraction(x[1],len(string))), abs_probs))
 
 def encode(string, codewords=None):
 	if not codewords:
@@ -98,10 +101,11 @@ column_names = {
 	'chars': 'Chars',
 	'probs': 'P',
 	'codewords': 'Codewords',
-	'code-lengths': 'Lengths'
+	'code-lengths': 'Lengths',
+	'occurences': 'n'
 }
 
-def print_table(format, chars, probabilities = None, codewords = None):
+def print_table(format, chars, abs_probs = None, rel_probs = None, codewords = None):
 	from prettytable import PrettyTable
 	import re
 
@@ -123,6 +127,7 @@ def print_table(format, chars, probabilities = None, codewords = None):
 					if format != []: probs_format = format[0]
 				elif param.startswith('w'): columns.append('codewords')
 				elif param.startswith('l'): columns.append('code-lengths')
+				elif param.startswith('o'): columns.append('occurences')
 		elif option in ['s', 'sortby']:
 			for param in parameters:
 				if param.startswith('p'): sortby = column_names['probs']
@@ -130,6 +135,7 @@ def print_table(format, chars, probabilities = None, codewords = None):
 					sortby = column_names['codewords']
 					table.sort_key = lambda x: [len(x[columns.index('codewords')+1]), int(x[columns.index('codewords')+1], 2)]
 				elif param.startswith('l'): sortby = column_names['code-lengths']
+				elif param.startswith('o'): sortby = column_names['occurences']
 		elif option in ['r', 'reverse']:
 			table.reversesort = True
 
@@ -143,8 +149,8 @@ def print_table(format, chars, probabilities = None, codewords = None):
 	# Add optional columns
 	for column in columns:
 		if column == 'probs':
-			probs = probabilities
-			if probs_format: probs = list(map(lambda x: "{{{}}}".format(probs_format).format(float(x)), probabilities))
+			probs = rel_probs
+			if probs_format: probs = list(map(lambda x: "{{{}}}".format(probs_format).format(float(x)), rel_probs))
 			
 			table.add_column(column_names[column], probs)
 		elif column == 'codewords':
@@ -152,6 +158,8 @@ def print_table(format, chars, probabilities = None, codewords = None):
 		elif column == 'code-lengths':
 			lengths = list(map(lambda x: len(x), codewords))
 			table.add_column(column_names[column], lengths)
+		elif column == 'occurences':
+			table.add_column(column_names[column], abs_probs)
 		
 	table.sortby = sortby
 	print(table)
@@ -162,7 +170,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Calculate Huffman Codes')
 	parser.add_argument('input', nargs='?', type=str, default=None, help='The string to encode')
 	parser.add_argument('-e', '--show-encoded', action='store_true', help='Show the encoded string')
-	parser.add_argument('-d', '--data', help="Shows generated data in formated table: columns=[p{<format>}|w|l]+,sortby=[p|w|l],reverse")
+	parser.add_argument('-d', '--data', help="Shows generated data in formated table: columns=[p{<format>}|w|l|o]+,sortby=[p|w|l|o],reverse")
 	parser.add_argument('-t', '--tree', help="Shows resulting huffman tree", action="store_true")
 	args = parser.parse_args()
 
@@ -171,9 +179,12 @@ if __name__ == "__main__":
 		input = sys.stdin.read().rstrip()
 
 	# Calculate Probabilites
-	char_prob_pairs = sorted(char_probabilities(input), key=lambda x : x[0])
-	chars = list(map(lambda x: x[0], char_prob_pairs))
-	probs = list(map(lambda x: x[1], char_prob_pairs))
+	char_abs_probs_pairs = sorted(char_occurrences(input), key=lambda x : x[0])
+	chars = list(map(lambda x: x[0], char_abs_probs_pairs))
+	abs_probs = list(map(lambda x: x[1], char_abs_probs_pairs))
+
+	char_prob_pairs = char_probabilities(input, char_abs_probs_pairs)
+	rel_probs = list(map(lambda x: x[1], char_prob_pairs))
 
 	# Calculate huffman codes
 	huffman_tree = HuffmanTree.from_char_probabilities(char_prob_pairs)
@@ -184,7 +195,7 @@ if __name__ == "__main__":
 	if not args.show_encoded and not args.data and not args.tree:
 		args.show_encoded = True
 	if args.data:
-		print_table(args.data, chars, probs, codewords)
+		print_table(args.data, chars, abs_probs, rel_probs, codewords)
 	if args.tree:
 		print(huffman_tree)
 	if args.show_encoded:
