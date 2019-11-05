@@ -1,7 +1,19 @@
 # -*- coding: UTF-8
 
-import math
+import math, re, ast
 from fractions import Fraction
+
+COLUMN_OCCURENCES = 'o'
+COLUMN_REL_PROBS = 'p'
+COLUMN_CODES = 'c'
+COLUMN_CODE_LENGTHS = 'l'
+COLUMNS = sorted([COLUMN_OCCURENCES, COLUMN_REL_PROBS, COLUMN_CODES, COLUMN_CODE_LENGTHS])
+DEFAULT_COLUMN_HEADERS = {
+	COLUMN_OCCURENCES: 'n',
+	COLUMN_REL_PROBS: 'P',
+	COLUMN_CODES: 'Huffman Code',
+	COLUMN_CODE_LENGTHS: 'Code length'
+}
 
 class HuffmanTree:
 	def __init__(self, cases, probability, left=None, right=None):
@@ -35,7 +47,7 @@ class HuffmanTree:
 
 	@staticmethod
 	def from_char_probabilities(char_probs):
-		nodes = sorted(list(map(lambda x: HuffmanTree(x[0], x[1]) , char_probs)), key=lambda x: x.probability)
+		nodes = sorted([HuffmanTree(item[0], item[1]) for item in char_probs.items()], key=lambda x: x.probability)
 		while len(nodes) > 1:
 			node_left_idx = 0
 			for i in range(len(nodes)):
@@ -68,7 +80,7 @@ class HuffmanTree:
 		else:
 			return {**self.left.get_huffman_codewords(prefix_code+"1"), **self.right.get_huffman_codewords(prefix_code+"0")}
 
-def char_occurrences(string):
+def char_occurrences_in(string):
 	""" Returns a list of pairs, each consisting out of a char and its number of occurences in the string """
 	probs = dict()
 	for char in string:
@@ -76,138 +88,167 @@ def char_occurrences(string):
 			probs[char] = 1
 		else:
 			probs[char] = probs[char] + 1	
-	return sorted(list(map(lambda c: (c,probs[c]), probs)))
+	return probs
 
-def char_probabilities(string, abs_probs=None):
+def char_probabilities_in(string, char_occurences=None):
 	""" Returns a list of pairs, each consisting out of a char and its probability in the string """
-	if not abs_probs:
-		abs_probs = char_occurrences(string)
+	if not char_occurences:
+		char_occurences = char_occurrences_in(string)
+	return {char: Fraction(char_occurences[char], len(string)) for char in char_occurences}
 
-	return list(map(lambda x: (x[0], Fraction(x[1],len(string))), abs_probs))
+#############
+# CLI Utils #
+#############
 
 def encode(string, codewords=None, format_hex=False):
 	""" Encodes string with the passed codewords. Codewords are generated if not present """
 	if not codewords:
-		ht = HuffmanTree.from_char_probabilities(char_probabilities(string))
+		ht = HuffmanTree.from_char_probabilities(char_probabilities_in(string))
 		codewords = ht.get_huffman_codewords()
 	encoded = ""
 	for char in string:
 		encoded += codewords[char]
-	if format_hex:
-		hex_str = ''
-		nibble = encoded[-4::]
-		while nibble != '':
-			encoded = encoded[:-4]
-			hex_str = hex(int(nibble,2))[2:] + hex_str
-			nibble = encoded[-4::]
-		encoded = hex_str
+	if format_hex: 
+		encoded = bin_str_to_hex_str(encoded)
 	return encoded
 
+def bin_str_to_hex_str(bin_str):
+	hex_str = ''
+	nibble = bin_str[-4::]
+	while nibble != '':
+		bin_str = bin_str[:-4]
+		hex_str = hex(int(nibble,2))[2:] + hex_str
+		nibble = bin_str[-4::]
+	return hex_str
+
+def generate_table_rows(string, columns_with_options, sortby=None, reverse=False):
+	# Generate data required by default
+	char_occurences = char_occurrences_in(string)
+	char_probs = char_probabilities_in(string, char_occurences=char_occurences)
+	ht = HuffmanTree.from_char_probabilities(char_probs)
+	codes = ht.get_huffman_codewords()
+
+	# Sort rows
+	chars = sorted(char_occurences)
+	if sortby == COLUMN_CODES: chars = sorted(chars, key=lambda char: (len(codes[char]), int(codes[char],2)))
+	elif sortby == COLUMN_OCCURENCES: chars = sorted(chars, key=lambda char: char_occurences[char])
+	elif sortby == COLUMN_REL_PROBS: chars = sorted(chars, key=lambda char: char_probs[char])
+	elif sortby == COLUMN_CODE_LENGTHS: chars = sorted(chars, key=lambda char: len(codes[char]))
+
+	# Reverse rows
+	if reverse: chars = reversed(chars)
+
+	# Generate rows
+	for i,char in enumerate(chars):
+		row = [char]
+		for column, options in columns_with_options:
+			if column == COLUMN_CODES:
+				code = codes[char]
+				if options and options.get('hex', False): code = bin_str_to_hex_str(code) 
+				row.append(code)
+			elif column == COLUMN_OCCURENCES:
+				row.append(str(char_occurences[char]))
+			elif column == COLUMN_REL_PROBS:
+				prob = char_probs[char]
+				if options and 'f' in options: prob = "{{{}}}".format(options['f']).format(float(prob))
+				row.append(str(prob))
+			elif column == COLUMN_CODE_LENGTHS:
+				row.append(str(len(codes[char])))
+		yield row
+
+def create_table(rows, columns_with_options):
+	from prettytable import PrettyTable
+
+	# Create Table Headers
+	headers = ['Chars']
+	for column, options in columns_with_options:
+		if options and 'name' in options: headers.append(options['name'])
+		else: headers.append(DEFAULT_COLUMN_HEADERS[column])
+
+	# Create Table
+	table = PrettyTable(headers)
+	for row in rows: table.add_row(row)
+	return table
+
+################
+# CLI Commands #
+################
+
+def cmd_encode(argv):
+	parser = argparse.ArgumentParser(description='Encode string using Huffman codes', usage='%(prog)s {} [-h] [string] [-x]'.format(CMD_ENCODE))
+	parser.add_argument('string', nargs='?', type=str, default=None, help='The string to encode. Omit to use stdin'),
+	parser.add_argument('-x', '--hex', action='store_true', help='Output in hex')
+	args = parser.parse_args(argv)
+
+	if args.string == None:
+		line = sys.stdin.readline().rstrip()
+		while line != '':
+			encoded = encode(line, format_hex=args.hex)
+			print(encoded)
+			line = sys.stdin.readline().rstrip()
+	else:
+		encoded = encode(args.string, format_hex=args.hex)
+		print(encoded)
+
+def cmd_table(argv):
+	parser = argparse.ArgumentParser(description='Outputs table with Huffman Codes related data', usage='%(prog)s {} [-h] [string] [-c] [-s] [-r] [-p]'.format(CMD_TABLE))
+	parser.add_argument('string', nargs='?', type=str, default=None, help='String Huffman Codes are generated from. Omit to use stdin'),
+	parser.add_argument('-c', '--columns', type=str, help='Included Columns in that order: [{}].'.format('|'.join(COLUMNS)))
+	parser.add_argument('-s', '--sort', type=str, help='Sort rows by column: [{}]'.format('|'.join(COLUMNS)))
+	parser.add_argument('-r', '--reversed', action='store_true', help='Sort rows in reversed order')
+	parser.add_argument('-p', '--pretty-print', action='store_true', help='Pretty prints table')
+	args = parser.parse_args(argv)
+
+	# Defaults
+	if not args.columns: args.columns = COLUMN_CODES
+
+	# Parse args.columns
+	columns_with_options = []
+	for param in re.findall("(.(?:\{[^\{\}]*\})?)", args.columns):
+		# Extract column and options 
+		column_option_pair = list(re.findall("(.)(\{[^\{\}]*\})?",param)[0])
+		if not column_option_pair[0] in COLUMNS:
+			 raise Exception("Unknown column: '{}'. Valid columns are: [{}]".format(column_option_pair[0], '|'.join(COLUMNS)))
+		if column_option_pair[1]:
+			column_option_pair[1] = ast.literal_eval(column_option_pair[1])
+		columns_with_options.append(column_option_pair)
+
+	# Use stdin if string is omitted
+	if args.string:
+		rows = generate_table_rows(args.string, columns_with_options, args.sort, args.reversed)
+		if args.pretty_print:
+			table = create_table(rows, columns_with_options)
+			print(table)
+		else: 
+			for row in rows: print(';'.join(row))
+
+	else:
+		line = sys.stdin.readline().rstrip()
+		while line != '':
+			rows = generate_table_rows(line, columns_with_options, args.sort, args.reversed)
+			if args.pretty_print:
+				table = create_table(rows, columns_with_options)
+				print(table)
+			else: 
+				for row in rows: print(';'.join(row))
+			line = sys.stdin.readline().rstrip()
+		
 ########
 # Main #
 ########
 
-column_names = {
-	'chars': 'Chars',
-	'probs': 'P',
-	'codewords': 'Codewords',
-	'code-lengths': 'Lengths',
-	'occurences': 'n'
-}
-
-def print_table(format, chars, abs_probs = None, rel_probs = None, codewords = None):
-	from prettytable import PrettyTable
-	import re
-
-	table = PrettyTable()
-
-	columns = ['chars']
-	sortby = column_names['chars']
-	probs_format = None
-
-	for segment in format.split(','):
-		option, parameters = segment.split('=') if '=' in segment else (segment, '')
-		parameters = list(filter(lambda x: x != '', re.split("(.(?:\{.*\})?)", parameters)))
-
-		if option in ['c', 'columns']:
-			for param in parameters:
-				if param.startswith('p'): 
-					columns.append('probs')
-					format = list(filter(lambda x: x!='p' and x != '', re.split(".\{(.*)\}", param)))
-					if format != []: probs_format = format[0]
-				elif param.startswith('w'): columns.append('codewords')
-				elif param.startswith('l'): columns.append('code-lengths')
-				elif param.startswith('o'): columns.append('occurences')
-		elif option in ['s', 'sortby']:
-			for param in parameters:
-				if param.startswith('p'): sortby = column_names['probs']
-				elif param.startswith('w'): 
-					sortby = column_names['codewords']
-					table.sort_key = lambda x: [len(x[columns.index('codewords')+1]), int(x[columns.index('codewords')+1], 2)]
-				elif param.startswith('l'): sortby = column_names['code-lengths']
-				elif param.startswith('o'): sortby = column_names['occurences']
-		elif option in ['r', 'reverse']:
-			table.reversesort = True
-
-	# Defaults
-	if len(columns) == 1:
-		columns.append('probs')
-
-	# Add chars column
-	table.add_column(column_names['chars'], chars)
-
-	# Add optional columns
-	for column in columns:
-		if column == 'probs':
-			probs = rel_probs
-			if probs_format: probs = list(map(lambda x: "{{{}}}".format(probs_format).format(float(x)), rel_probs))
-			
-			table.add_column(column_names[column], probs)
-		elif column == 'codewords':
-			table.add_column(column_names[column], codewords)
-		elif column == 'code-lengths':
-			lengths = list(map(lambda x: len(x), codewords))
-			table.add_column(column_names[column], lengths)
-		elif column == 'occurences':
-			table.add_column(column_names[column], abs_probs)
-		
-	table.sortby = sortby
-	print(table)
+CMD_ENCODE = 'encode'
+CMD_TABLE = 'table'
+COMMANDS = [CMD_ENCODE, CMD_TABLE]
 
 if __name__ == "__main__":
-	# Parse CL Arguments
 	import argparse, sys
-	parser = argparse.ArgumentParser(description='Calculate Huffman Codes')
-	parser.add_argument('input', nargs='?', type=str, default=None, help='The string to encode')
-	parser.add_argument('-e', '--show-encoded', action='store_true', help='Show the encoded string')
-	parser.add_argument('-d', '--data', help="Shows generated data in formated table: columns=[p{<format>}|w|l|o]+,sortby=[p|w|l|o],reverse")
-	parser.add_argument('-t', '--tree', help="Shows resulting huffman tree", action="store_true")
-	args = parser.parse_args()
+	# Parse CLI Arguments
+	parser = argparse.ArgumentParser(description='Huffman Code Utility')
+	parser.add_argument('command', type=str, choices=COMMANDS, help='Subcommand to run')
+	args = parser.parse_args(sys.argv[1:2])
 
-	input = args.input
-	if input == None: 
-		input = sys.stdin.read().rstrip()
-
-	# Calculate Probabilites
-	char_abs_probs_pairs = sorted(char_occurrences(input), key=lambda x : x[0])
-	chars = list(map(lambda x: x[0], char_abs_probs_pairs))
-	abs_probs = list(map(lambda x: x[1], char_abs_probs_pairs))
-
-	char_prob_pairs = char_probabilities(input, char_abs_probs_pairs)
-	rel_probs = list(map(lambda x: x[1], char_prob_pairs))
-
-	# Calculate huffman codes
-	huffman_tree = HuffmanTree.from_char_probabilities(char_prob_pairs)
-	char_code_pairs = huffman_tree.get_huffman_codewords()
-	codewords = list(map(lambda x: char_code_pairs[x], chars))	
-
-	# Output requested data
-	if not args.show_encoded and not args.data and not args.tree:
-		args.show_encoded = True
-	if args.data:
-		print_table(args.data, chars, abs_probs, rel_probs, codewords)
-	if args.tree:
-		print(huffman_tree)
-	if args.show_encoded:
-		encoded = encode(input, char_code_pairs)
-		print(encoded)
+	if args.command == CMD_ENCODE:
+		cmd_encode(sys.argv[2:])
+	elif args.command == CMD_TABLE:
+		cmd_table(sys.argv[2:])
