@@ -60,9 +60,10 @@ class HuffmanTree:
 			nodes.insert(min(node_left_idx, node_right_idx), parent)
 		return nodes[0]
 
-	def get_huffman_codewords(self, prefix_code=""):
+	def get_huffman_codewords(self, prefix_code=''):
 		""" Returns a list of pairs, each consisting out of a char and its huffman code """
 		if len(self.cases) == 1:
+			if prefix_code == '': prefix_code = '0'
 			return {self.cases[0]: prefix_code}
 		else:
 			return {**self.left.get_huffman_codewords(prefix_code+"1"), **self.right.get_huffman_codewords(prefix_code+"0")}
@@ -85,6 +86,7 @@ def char_probabilities(string, abs_probs=None):
 	return list(map(lambda x: (x[0], Fraction(x[1],len(string))), abs_probs))
 
 def encode(string, codewords=None):
+	""" Encodes string with the passed codewords. Codewords are generated if not present """
 	if not codewords:
 		ht = HuffmanTree.from_char_probabilities(char_probabilities(string))
 		codewords = ht.get_huffman_codewords()
