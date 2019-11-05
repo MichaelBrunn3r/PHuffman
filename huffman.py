@@ -85,7 +85,7 @@ def char_probabilities(string, abs_probs=None):
 
 	return list(map(lambda x: (x[0], Fraction(x[1],len(string))), abs_probs))
 
-def encode(string, codewords=None):
+def encode(string, codewords=None, format_hex=False):
 	""" Encodes string with the passed codewords. Codewords are generated if not present """
 	if not codewords:
 		ht = HuffmanTree.from_char_probabilities(char_probabilities(string))
@@ -93,6 +93,14 @@ def encode(string, codewords=None):
 	encoded = ""
 	for char in string:
 		encoded += codewords[char]
+	if format_hex:
+		hex_str = ''
+		nibble = encoded[-4::]
+		while nibble != '':
+			encoded = encoded[:-4]
+			hex_str = hex(int(nibble,2))[2:] + hex_str
+			nibble = encoded[-4::]
+		encoded = hex_str
 	return encoded
 
 ########
