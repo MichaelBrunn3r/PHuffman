@@ -1,51 +1,88 @@
 ## Requirements
 - Python3
-- prettytable (only if you need tables)
+- [prettytable](https://pypi.org/project/PrettyTable/) (only if you need pretty printed tables)
 
 ## Usage
-`huffman.py [-h] [-e] [-d DATA] [-t] [input]`<br>
-
+`python huffman.py [-h] {encode,table}`<br>
 Arguments:
-- `input`: The input string. Can be ommitted to use stdin
-- `-e`: Show the Huffman encoded input
-- `-t`: Show the generated Huffman Tree
-- `-d (OPTION=PARAMS,)*(OPTION=PARAMS)`: Show generated data in formated table:
-  - `[c|columns]=PARAM+`: Show columns in the parameters
-    - `p(\{FORMAT\})?`: Char probabilites. Optionaly a format string can be added
-    - `w`: Huffman codewords
-    - `l`: Huffman codeword lengths
-  - `[s|sortby]=[p|w|l]`: Sort table by a column
-  - `[r|reverse]`: Reverse sort order
-  
- ## Examples
- - Show all data, sorted by codewords in reverse order:<br>
-   `python huffman.py -d c=pwl,s=w,r "huffman"`
-   ```
-    +-------+-----+-----------+---------+
-    | Chars |  P  | Codewords | Lengths |
-    +-------+-----+-----------+---------+
-    |   a   | 1/7 |    111    |    3    |
-    |   h   | 1/7 |    110    |    3    |
-    |   m   | 1/7 |    011    |    3    |
-    |   n   | 1/7 |    010    |    3    |
-    |   u   | 1/7 |     10    |    2    |
-    |   f   | 2/7 |     00    |    2    |
-    +-------+-----+-----------+---------+
-   ````
-- Input from stdin:<br>
-  `echo huffman | python huffman.py`<br>
+- `{encode,table}`: The subcommand to run
+
+#### Subcommand Encode
+Usage: `python huffman.py encode [-h] [string] [-x]`
+
+Encodes an input string to Binary using the Huffman Codes generated from it.
+Arguments:
+- `string`: The input string to encode. Omit to use stdin instead.
+- `-x`: Set this flag so that the 
+
+#### Subcommand Table
+Usage: `python huffman.py table [-h] [string] [-c] [-s] [-r] [-p]`
+
+Prints a table of the data resulting from generating the Huffman Codes from the input string.
+Usefull as a reference for when you create Huffman Codes by hand. 
+Arguments:
+- `string`: The input string to generate the Huffman Codes from. Omit to use stdin instead.
+- `-c`: A list of the columns included in the output table, in that order.
+  - Structure: `(<column>{<options>})+`
+  - `<options>`: A python dictionary with indivudual settings for the column. <br>
+    Possible options depend on column type.
+  - `<column>`: The column abbreviation
+    - `c`: The Huffman Codewords
+      - option `hex`: Prints the codeword as a hex string 
+    - `l`: The length of the Huffman Codewords
+    - `o`: The absolute occurences of each char
+    - `p`: The probability of each char
+      - option `f`: The format for the decimal number
+- `-s`: Sort the table by this column
+- `-r`: Sort in reverse
+- `-p`: Pretty print the table using prettytable
+
+## Examples
+- Encode string in binary:<br>
+  `python huffman.py encode "huffman"`<br>
   `110100000011111010`
-- Show only char probabilities, formated to 4 decimal points:<br>
-  `python huffman.py -d c=p{:.4f} "huffman"`<br>
+- Encode string in hex:<br>
+  `python huffman.py encode "huffman"`<br>
+  `340fa`
+- Print table with probabilites and codewords:<br>
+  `python huffman.py table "huffman" -c pc`
   ```
-  +-------+--------+
-  | Chars |   P    |
-  +-------+--------+
-  |   a   | 0.1429 |
-  |   f   | 0.2857 |
-  |   h   | 0.1429 |
-  |   m   | 0.1429 |
-  |   n   | 0.1429 |
-  |   u   | 0.1429 |
-  +-------+--------+
+  a;1/7;111
+  f;2/7;00
+  h;1/7;110
+  m;1/7;011
+  n;1/7;010
+  u;1/7;10
   ```
+- Print pretty printed table, columns probability and codewords:<br>
+  `python huffman.py table "huffman" -c pc -p`
+  ```
+  +-------+-----+--------------+
+  | Chars |  P  | Huffman Code |
+  +-------+-----+--------------+
+  |   a   | 1/7 |     111      |
+  |   f   | 2/7 |      00      |
+  |   h   | 1/7 |     110      |
+  |   m   | 1/7 |     011      |
+  |   n   | 1/7 |     010      |
+  |   u   | 1/7 |      10      |
+  +-------+-----+--------------+
+  ```
+- Print pretty printed table, columns 'pc', formated probabilities, sorted reverse by probabilites:<br>
+  `python .\huffman.py table "huffman" -c "p{'f':':.4f'}c" -p -s p -r`
+  ```
+  +-------+--------+--------------+
+  | Chars |   P    | Huffman Code |
+  +-------+--------+--------------+
+  |   f   | 0.2857 |      00      |
+  |   u   | 0.1429 |      10      |
+  |   n   | 0.1429 |     010      |
+  |   m   | 0.1429 |     011      |
+  |   h   | 0.1429 |     110      |
+  |   a   | 0.1429 |     111      |
+  +-------+--------+--------------+
+  ```
+- Input from stdin:<br>
+  `echo "huffman" | python .\huffman.py encode`<br>
+  `110100000011111010`
+  
