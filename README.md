@@ -8,18 +8,18 @@ Arguments:
 - `{encode,table}`: The subcommand to run
 
 #### Subcommand Encode
-Usage: `python huffman.py encode [-h] [string] [-x]`
-
 Encodes an input string to Binary using the Huffman Codes generated from it.
+
+Usage: `python huffman.py encode [-h] [string] [-x]`<br>
 Arguments:
 - `string`: The input string to encode. Omit to use stdin instead.
 - `-x`: Set this flag so that the 
 
 #### Subcommand Table
-Usage: `python huffman.py table [-h] [string] [-c] [-s] [-r] [-p]`
-
 Prints a table of the data resulting from generating the Huffman Codes from the input string.
-Usefull as a reference for when you create Huffman Codes by hand. 
+Usefull as a reference for when you create Huffman Codes by hand.
+
+Usage: `python huffman.py table [-h] [string] [-c] [-s] [-r] [-p]`<br>
 Arguments:
 - `string`: The input string to generate the Huffman Codes from. Omit to use stdin instead.
 - `-c`: A list of the columns included in the output table, in that order.
