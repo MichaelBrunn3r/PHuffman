@@ -47,7 +47,7 @@ class HuffmanTree:
 
 	@staticmethod
 	def from_char_probabilities(char_probs):
-		nodes = sorted([HuffmanTree(item[0], item[1]) for item in char_probs.items()], key=lambda x: x.probability)
+		nodes = sorted([HuffmanTree(char, char_probs[char]) for char in sorted(char_probs)], key=lambda x: x.probability)
 		while len(nodes) > 1:
 			node_left_idx = 0
 			for i in range(len(nodes)):
