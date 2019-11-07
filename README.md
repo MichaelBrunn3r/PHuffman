@@ -1,3 +1,18 @@
+## About
+This little tool is supposed to help when calculating the Huffman codes of a string by hand.
+It expects you to follow this algorithm:
+- Count relative probability of all unique Chars in the string and sort them alphabetically.
+Making a table for reference might be usefull
+- Create a Huffman Tree with this algorithm:
+  - The tree is going to be built from the bottom up
+  1. Create leave nodes at the bottom for every char, sorted first by probability and then alphabetically
+  2. Take the two smallest probabilites, starting from the left, and sum up their probabilites
+  3. Add the resulting parent node with the calcualted probability. It should sit right above its children
+  - !!! Never reorder any nodes !!! The new parent node should not move right of any other node to its right. If the children nodes are far apart from another, put the parent above the left child
+  4. Repeat from step ii until only one node is left
+- Now you can calculate the Huffman codes. For every leave/char, traverse the tree from the top. Everytime you go left, add a 1 to the code, if you go right, add a 0.
+  
+
 ## Requirements
 - Python3
 - [prettytable](https://pypi.org/project/PrettyTable/) (only if you need pretty printed tables)
