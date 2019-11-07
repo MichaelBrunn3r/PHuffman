@@ -59,7 +59,7 @@ Arguments:
   `python huffman.py encode "huffman"`<br>
   `110100000011111010`
 - Encode string in hex:<br>
-  `python huffman.py encode "huffman"`<br>
+  `python huffman.py encode "huffman" -x`<br>
   `340fa`
 - Print table with probabilites and codewords:<br>
   `python huffman.py table "huffman" -c pc`
