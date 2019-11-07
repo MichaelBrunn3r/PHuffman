@@ -30,7 +30,7 @@ Encodes an input string to Binary using the Huffman Codes generated from it.
 Usage: `python huffman.py encode [-h] [string] [-x]`<br>
 Arguments:
 - `string`: The input string to encode. Omit to use stdin instead.
-- `-x`: Set this flag so that the 
+- `-x`: Set this flag so that the string will be encoded in hex instead of binary
 
 #### Subcommand Table
 Prints a table of the data resulting from generating the Huffman Codes from the input string.
