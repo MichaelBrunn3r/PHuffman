@@ -112,6 +112,10 @@ def encode(string, codewords=None, format_hex=False):
 		encoded = bin_str_to_hex_str(encoded)
 	return encoded
 
+#############
+# CLI Utils #
+#############
+
 def bin_str_to_hex_str(bin_str):
 	hex_str = ''
 	nibble = bin_str[-4::]
@@ -180,15 +184,18 @@ def cmd_encode(argv):
 	parser.add_argument('-x', '--hex', action='store_true', help='Output in hex')
 	args = parser.parse_args(argv)
 
-	if args.string == None:
+	def execute(input):
+		encoded = encode(input, format_hex=args.hex)
+		print(encoded)
+
+	if args.string:
+		execute(args.string)
+	else:
 		line = sys.stdin.readline().rstrip()
 		while line != '':
-			encoded = encode(line, format_hex=args.hex)
-			print(encoded)
+			execute(line)
 			line = sys.stdin.readline().rstrip()
-	else:
-		encoded = encode(args.string, format_hex=args.hex)
-		print(encoded)
+
 
 def cmd_table(argv):
 	parser = argparse.ArgumentParser(description='Outputs table with Huffman Codes related data', usage='%(prog)s {} [-h] [string] [-c] [-s] [-r] [-p]'.format(CMD_TABLE))
@@ -213,24 +220,21 @@ def cmd_table(argv):
 			column_option_pair[1] = ast.literal_eval(column_option_pair[1])
 		columns_with_options.append(column_option_pair)
 
-	# Use stdin if string is omitted
-	if args.string:
-		rows = generate_table_rows(args.string, columns_with_options, args.sort, args.reversed)
+	def execute(input):
+		rows = generate_table_rows(input, columns_with_options, args.sort, args.reversed)
 		if args.pretty_print:
 			table = create_table(rows, columns_with_options)
 			print(table)
 		else: 
 			for row in rows: print(';'.join(row))
 
+	# Use stdin if string is omitted
+	if args.string:
+		execute(args.string)
 	else:
 		line = sys.stdin.readline().rstrip()
 		while line != '':
-			rows = generate_table_rows(line, columns_with_options, args.sort, args.reversed)
-			if args.pretty_print:
-				table = create_table(rows, columns_with_options)
-				print(table)
-			else: 
-				for row in rows: print(';'.join(row))
+			execute(line)
 			line = sys.stdin.readline().rstrip()
 		
 ########
