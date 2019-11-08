@@ -3,13 +3,13 @@
 import math, re, ast
 from fractions import Fraction
 
-COLUMN_OCCURENCES = 'o'
+COLUMN_OCCURRENCES = 'o'
 COLUMN_REL_PROBS = 'p'
 COLUMN_CODES = 'c'
 COLUMN_CODE_LENGTHS = 'l'
-COLUMNS = sorted([COLUMN_OCCURENCES, COLUMN_REL_PROBS, COLUMN_CODES, COLUMN_CODE_LENGTHS])
+COLUMNS = sorted([COLUMN_OCCURRENCES, COLUMN_REL_PROBS, COLUMN_CODES, COLUMN_CODE_LENGTHS])
 DEFAULT_COLUMN_HEADERS = {
-	COLUMN_OCCURENCES: 'n',
+	COLUMN_OCCURRENCES: 'n',
 	COLUMN_REL_PROBS: 'P',
 	COLUMN_CODES: 'Huffman Code',
 	COLUMN_CODE_LENGTHS: 'Code length'
@@ -81,7 +81,7 @@ class HuffmanTree:
 			return {**self.left.get_huffman_codewords(prefix_code+"1"), **self.right.get_huffman_codewords(prefix_code+"0")}
 
 def char_occurrences_in(string):
-	""" Returns a list of pairs, each consisting out of a char and its number of occurences in the string """
+	""" Returns a list of pairs, each consisting out of a char and its number of occurrences in the string """
 	probs = dict()
 	for char in string:
 		if not char in probs:
@@ -90,11 +90,11 @@ def char_occurrences_in(string):
 			probs[char] = probs[char] + 1	
 	return probs
 
-def char_probabilities_in(string, char_occurences=None):
+def char_probabilities_in(string, char_occurrences=None):
 	""" Returns a list of pairs, each consisting out of a char and its probability in the string """
-	if not char_occurences:
-		char_occurences = char_occurrences_in(string)
-	return {char: Fraction(char_occurences[char], len(string)) for char in char_occurences}
+	if not char_occurrences:
+		char_occurrences = char_occurrences_in(string)
+	return {char: Fraction(char_occurrences[char], len(string)) for char in char_occurrences}
 
 #############
 # CLI Utils #
@@ -123,15 +123,15 @@ def bin_str_to_hex_str(bin_str):
 
 def generate_table_rows(string, columns_with_options, sortby=None, reverse=False):
 	# Generate data required by default
-	char_occurences = char_occurrences_in(string)
-	char_probs = char_probabilities_in(string, char_occurences=char_occurences)
+	char_occurrences = char_occurrences_in(string)
+	char_probs = char_probabilities_in(string, char_occurrences=char_occurrences)
 	ht = HuffmanTree.from_char_probabilities(char_probs)
 	codes = ht.get_huffman_codewords()
 
 	# Sort rows
-	chars = sorted(char_occurences)
+	chars = sorted(char_occurrences)
 	if sortby == COLUMN_CODES: chars = sorted(chars, key=lambda char: (len(codes[char]), int(codes[char],2)))
-	elif sortby == COLUMN_OCCURENCES: chars = sorted(chars, key=lambda char: char_occurences[char])
+	elif sortby == COLUMN_OCCURRENCES: chars = sorted(chars, key=lambda char: char_occurrences[char])
 	elif sortby == COLUMN_REL_PROBS: chars = sorted(chars, key=lambda char: char_probs[char])
 	elif sortby == COLUMN_CODE_LENGTHS: chars = sorted(chars, key=lambda char: len(codes[char]))
 
@@ -146,8 +146,8 @@ def generate_table_rows(string, columns_with_options, sortby=None, reverse=False
 				code = codes[char]
 				if options and options.get('hex', False): code = bin_str_to_hex_str(code) 
 				row.append(code)
-			elif column == COLUMN_OCCURENCES:
-				row.append(str(char_occurences[char]))
+			elif column == COLUMN_OCCURRENCES:
+				row.append(str(char_occurrences[char]))
 			elif column == COLUMN_REL_PROBS:
 				prob = char_probs[char]
 				if options and 'f' in options: prob = "{{{}}}".format(options['f']).format(float(prob))
