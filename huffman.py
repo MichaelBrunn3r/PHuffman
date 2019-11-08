@@ -96,10 +96,6 @@ def char_probabilities_in(string, char_occurrences=None):
 		char_occurrences = char_occurrences_in(string)
 	return {char: Fraction(char_occurrences[char], len(string)) for char in char_occurrences}
 
-#############
-# CLI Utils #
-#############
-
 def encode(string, codewords=None, format_hex=False):
 	""" Encodes string with the passed codewords. Codewords are generated if not present """
 	if not codewords:
@@ -111,6 +107,21 @@ def encode(string, codewords=None, format_hex=False):
 	if format_hex: 
 		encoded = bin_str_to_hex_str(encoded)
 	return encoded
+
+def entropy(string):
+	H = 0
+	for char,prob in char_probabilities_in(string).items():
+		H += prob * math.log2(1/prob)
+	return H
+
+def avrg_codelen(string):
+	char_probs = char_probabilities_in(string)
+	ht = HuffmanTree.from_char_probabilities(char_probs)
+	codes = ht.get_huffman_codewords()
+	L = 0
+	for char,prob in char_probs.items():
+		L += prob * len(codes[char])
+	return L
 
 #############
 # CLI Utils #
@@ -174,6 +185,16 @@ def create_table(rows, columns_with_options):
 	for row in rows: table.add_row(row)
 	return table
 
+def handle_input(input, func):
+	""" Executes func with input, uses stdin as a fallback """
+	if input:
+		func(input)
+	else:
+		line = sys.stdin.readline().rstrip()
+		while line != '':
+			func(line)
+			line = sys.stdin.readline().rstrip()
+
 ################
 # CLI Commands #
 ################
@@ -188,14 +209,8 @@ def cmd_encode(argv):
 		encoded = encode(input, format_hex=args.hex)
 		print(encoded)
 
-	if args.string:
-		execute(args.string)
-	else:
-		line = sys.stdin.readline().rstrip()
-		while line != '':
-			execute(line)
-			line = sys.stdin.readline().rstrip()
-
+	handle_input(args.string, execute)
+		
 
 def cmd_table(argv):
 	parser = argparse.ArgumentParser(description='Outputs table with Huffman Codes related data', usage='%(prog)s {} [-h] [string] [-c] [-s] [-r] [-p]'.format(CMD_TABLE))
@@ -228,14 +243,28 @@ def cmd_table(argv):
 		else: 
 			for row in rows: print(';'.join(row))
 
-	# Use stdin if string is omitted
-	if args.string:
-		execute(args.string)
-	else:
-		line = sys.stdin.readline().rstrip()
-		while line != '':
-			execute(line)
-			line = sys.stdin.readline().rstrip()
+	handle_input(args.string, execute)
+	
+def cmd_entropy(argv):
+	parser = argparse.ArgumentParser(description='Calculates the entropy of the input string', usage='%(prog)s {} [-h] [string]'.format(CMD_ENTROPY))
+	parser.add_argument('string', nargs='?', type=str, default=None, help='String to calculate entropy for. Omit to use stdin'),
+	args = parser.parse_args(argv)
+
+	handle_input(args.string, lambda input: print(float(entropy(input))))
+
+def cmd_avrg_codelen(argv):
+	parser = argparse.ArgumentParser(description='Calculates the average Huffman code length', usage='%(prog)s {} [-h] [string]'.format(CMD_AVRG_CODE_LENGTH))
+	parser.add_argument('string', nargs='?', type=str, default=None, help='String to calculate the average Huffman code length for. Omit to use stdin'),
+	args = parser.parse_args(argv)
+
+	handle_input(args.string, lambda input: print(float(avrg_codelen(input))))
+
+def cmd_redundancy(argv):
+	parser = argparse.ArgumentParser(description='Calculates redundancy of the Huffman encoding compared to theoretical optimal encoding (Entropy)', usage='%(prog)s {} [-h] [string]'.format(CMD_REDUNDANCY))
+	parser.add_argument('string', nargs='?', type=str, default=None, help='String to calculate the redundancy of Huffman encoding for. Omit to use stdin'),
+	args = parser.parse_args(argv)
+
+	handle_input(args.string, lambda input: print(float(avrg_codelen(input) - entropy(input))))
 		
 ########
 # Main #
@@ -243,7 +272,10 @@ def cmd_table(argv):
 
 CMD_ENCODE = 'encode'
 CMD_TABLE = 'table'
-COMMANDS = [CMD_ENCODE, CMD_TABLE]
+CMD_ENTROPY = 'entropy'
+CMD_AVRG_CODE_LENGTH = 'avrg_codelen'
+CMD_REDUNDANCY = 'redundancy'
+COMMANDS = [CMD_ENCODE, CMD_TABLE, CMD_ENTROPY, CMD_AVRG_CODE_LENGTH, CMD_REDUNDANCY]
 
 if __name__ == "__main__":
 	import argparse, sys
@@ -256,3 +288,9 @@ if __name__ == "__main__":
 		cmd_encode(sys.argv[2:])
 	elif args.command == CMD_TABLE:
 		cmd_table(sys.argv[2:])
+	elif args.command == CMD_ENTROPY:
+		cmd_entropy(sys.argv[2:])
+	elif args.command == CMD_AVRG_CODE_LENGTH:
+		cmd_avrg_codelen(sys.argv[2:])
+	elif args.command == CMD_REDUNDANCY:
+		cmd_redundancy(sys.argv[2:])
