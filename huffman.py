@@ -16,11 +16,12 @@ DEFAULT_COLUMN_HEADERS = {
 }
 
 class HuffmanTree:
-	def __init__(self, cases, probability, left=None, right=None):
+	def __init__(self, cases, probability, left=None, right=None, depth=0):
 		self.cases = cases
 		self.probability = probability
 		self.left = left
 		self.right = right
+		self.depth = depth
 
 	def __repr__(self):
 		cases_str = '['
@@ -31,11 +32,7 @@ class HuffmanTree:
 		return "({},[{},{}],{})".format(self.left, cases_str, self.probability, self.right)
 
 	def __str__(self,level=0):
-		cases_str = '['
-		for i,case in enumerate(self.cases):
-			if i > 0: cases_str += '|'
-			cases_str += case
-		cases_str += ']'
+		cases_str = '[' + ','.join(self.cases) + ']'
 
 		ret = ""
 		if self.right:
@@ -68,7 +65,8 @@ class HuffmanTree:
 
 			cases = node_left.cases + node_right.cases
 			probability = node_left.probability + node_right.probability
-			parent = HuffmanTree(cases, probability, left=node_left, right=node_right)
+			depth = max(node_left.depth,node_right.depth)+1
+			parent = HuffmanTree(cases, probability, left=node_left, right=node_right, depth=depth)
 			nodes.insert(min(node_left_idx, node_right_idx), parent)
 		return nodes[0]
 
