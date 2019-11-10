@@ -15,6 +15,8 @@ DEFAULT_COLUMN_HEADERS = {
 	COLUMN_CODE_LENGTHS: 'Code length'
 }
 
+LATEX_DEFAULT_EDGE_LABELS = [1,0]
+
 class HuffmanTree:
 	def __init__(self, cases, probability, left=None, right=None, depth=0):
 		self.cases = cases
@@ -193,6 +195,49 @@ def handle_input(input, func):
 			func(line)
 			line = sys.stdin.readline().rstrip()
 
+def escape_latex(string):
+	ESCAPE = {
+		'&': '\\&', '%': '\\%', '$': '\\$', '#': '\\#', '_': '\\_',
+		'{': '\\{', '}': '\\}', '[': '\\text{[}', ']': '\\text{]}',
+		'~': '\\textasciitilde', '^': '\\textasciicircum', '\\': '\\textbackslash',
+		',': '\\text{,}',
+	}
+
+	ret = ''
+	for char in string:
+		if char in ESCAPE: 
+			ret += ESCAPE[char]
+		else: ret += char
+	return ret	
+
+def print_latex_tree(tree, style={}):
+	print('\\begin{forest}')
+
+	# Edge labels
+	edge_labels = style.get('edge-labels', LATEX_DEFAULT_EDGE_LABELS)
+	option_edge_label_l = "edge label={{node[midway,left=tier*2pt] {{{}}}}}".format(edge_labels[0])
+	option_edge_label_r = "edge label={{node[midway,right=tier*2pt] {{{}}}}}".format(edge_labels[1])
+	print("\tdelay={{for tree={{if n children=0 {{}}{{s sep+=({}-tier)*3pt, for first={{{}}}, for last={{{}}}}}}}}},".format(tree.depth, option_edge_label_l, option_edge_label_r))
+
+	def preorder(tree, type='root'):
+		name = style.get('cases-sep', '$\\lor$').join(list(map(lambda case: escape_latex(case), tree.cases)))
+		label = "$\\frac{{{}}}{{{}}}$".format(tree.probability.numerator, tree.probability.denominator)
+		option_label = "label={{below:{}}}".format(label)
+		options = ','.join([option_label,style.get('node-options', '')])
+		node = "{},tier={},{}".format(name, tree.depth,options)
+
+		print('['+node, end='')
+		if tree.left:
+			preorder(tree.left, "left")
+		if tree.right:
+			preorder(tree.right, "right")
+		print(']', end='')
+
+	print('\t',end='')
+	preorder(tree)
+	print()
+	print('\end{forest}')
+
 ################
 # CLI Commands #
 ################
@@ -264,6 +309,22 @@ def cmd_redundancy(argv):
 
 	handle_input(args.string, lambda input: print(float(avrg_codelen(input) - entropy(input))))
 		
+def cmd_tree(argv):
+	parser = argparse.ArgumentParser(description='Outputs Huffman Tree of input string', usage='%(prog)s {} [-h] [string] [-l] [-s]'.format(CMD_TREE))
+	parser.add_argument('string', nargs='?', type=str, default=None, help='String to create the Huffman tree from. Omit to use stdin'),
+	parser.add_argument('-l', '--latex', action='store_true', help='Output as latex tree')
+	parser.add_argument('-s', '--style', type=str, help='Style for latex tree')
+	args = parser.parse_args(argv)
+
+	def execute(input):
+		ht = HuffmanTree.from_char_probabilities(char_probabilities_in(input))
+		if args.latex:
+			style = ast.literal_eval(args.style) if args.style else {}
+			print_latex_tree(ht, style)
+		else: print(ht)
+
+	handle_input(args.string, execute)
+		
 ########
 # Main #
 ########
@@ -273,7 +334,8 @@ CMD_TABLE = 'table'
 CMD_ENTROPY = 'entropy'
 CMD_AVRG_CODE_LENGTH = 'avrg_codelen'
 CMD_REDUNDANCY = 'redundancy'
-COMMANDS = [CMD_ENCODE, CMD_TABLE, CMD_ENTROPY, CMD_AVRG_CODE_LENGTH, CMD_REDUNDANCY]
+CMD_TREE = 'tree'
+COMMANDS = [CMD_ENCODE, CMD_TABLE, CMD_ENTROPY, CMD_AVRG_CODE_LENGTH, CMD_REDUNDANCY, CMD_TREE]
 
 if __name__ == "__main__":
 	import argparse, sys
@@ -292,3 +354,5 @@ if __name__ == "__main__":
 		cmd_avrg_codelen(sys.argv[2:])
 	elif args.command == CMD_REDUNDANCY:
 		cmd_redundancy(sys.argv[2:])
+	elif args.command == CMD_TREE:
+		cmd_tree(sys.argv[2:])
